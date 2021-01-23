@@ -1,0 +1,37 @@
+# Download base image
+FROM th-registry-1.beaverbay.local:5000/qback/qback_base:dev
+
+LABEL AUTHOR="Quinn D Granfor, spootdev@gmail.com"
+LABEL Description="This image holds the cron app"
+
+ARG ALPMIRROR
+ARG PIPMIRROR
+
+# copy PIP requirements
+COPY requirements.txt /qback
+WORKDIR /qback
+
+# had to go back to update instead of no-cache......throws errors
+RUN sed -i "s/dl-cdn.alpinelinux.org/${ALPMIRROR}/" /etc/apk/repositories \
+  && apk add --update \
+  alpine-sdk \
+  python3-dev \
+  linux-headers \
+  musl-dev \
+  py3-psycopg2 \
+  py3-psutil \
+  && pip3 install --trusted-host ${PIPMIRROR} -i https://${PIPMIRROR}/simple -r requirements.txt \
+  && apk del \
+  alpine-sdk \
+  python3-dev \
+  linux-headers \
+  musl-dev \
+  net-snmp-dev \
+  && rm -rf /var/cache/apk/* \
+  && rm requirements.txt
+
+COPY wait-for-it-ash-busybox130.sh /qback
+# Copy the source files for the app
+COPY src /qback
+
+CMD ["/bin/ash"]
