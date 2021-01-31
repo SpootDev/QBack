@@ -21,6 +21,30 @@ from datetime import datetime
 import httpx
 
 
+def com_es_httpx_post(message_type, message_text, index_name=None):
+    # this is so only have to pass during START log
+    if not hasattr(com_es_httpx_post, "index_ext"):
+        # it doesn't exist yet, so initialize it
+        # index_name should be populated on first run
+        com_es_httpx_post.index_ext = 'httpx_' + index_name.replace(' ', '_')
+    try:
+        response = httpx.post(
+            'http://th-elk-1.beaverbay.local:9200/%s/MediaKraken'
+            % (com_es_httpx_post.index_ext,),
+            data='{"@timestamp": "'
+                 + datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
+                 + '", "message": "%s",' % (message_text,)
+                 + ' "type": "%s",' % (message_type,)
+                 + ' "user": {"id": "metaman"}}',
+            headers={"Content-Type": "application/json"},
+            timeout=3.05)
+    except httpx.TimeoutException as exc:
+        return None
+    except httpx.ConnectError as exc:
+        return None
+    return response
+
+
 async def com_es_httpx_post_async(message_type, message_text, index_name=None):
     # this is so only have to pass during START log
     if not hasattr(com_es_httpx_post_async, "index_ext"):
